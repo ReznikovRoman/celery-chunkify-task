@@ -8,42 +8,47 @@ In other words you may split a huge amount of created tasks in the small chunks 
 
 [celery.chunks](http://docs.celeryproject.org/en/latest/userguide/canvas.html#chunks) is not an option, because it still creates all tasks in a memory and attaches a huge blob of data to a message.
 
+## Installation
+- Download the tarball and run ``python setup.py install``
+
+## Example
 Here is the example how to execute 1000 of tasks every 5 seconds:
 
 ```python
-from django.db.models import Min, Max  
-from chunkify import chunkify_task, Chunk  
-  
-users_queryset = User.objects.active()  
-  
+from celery_chunkificator.chunkify import chunkify_task, Chunk
+
+from django.db.models import Min, Max
+
+
+users_queryset = User.objects.active()
+
+
 def get_initial_chunk(*args, **kwargs):
-    """
-    Create an chunk of integers based on max and min primary keys.
-	"""
-    result = users_queryset.aggregate(Min('pk'), Max('pk'))  
-    chunk = Chunk(  
-        start=result['pk__min'] or 0,  
-        size=1000,  
-        max=result['pk__max'] or 0,  
-    )  
-    return chunk  
-  
-  
-@task  
-@chunkify_task(  
-    sleep_timeout=5,   
-    initial_chunk=get_initial_chunk  
-)  
+    """Create a chunk of integers based on max and min primary keys."""
+    result = users_queryset.aggregate(Min('pk'), Max('pk'))
+    chunk = Chunk(
+        start=result['pk__min'] or 0,
+        size=1000,
+        max=result['pk__max'] or 0,
+    )
+    return chunk
+
+
+@task
+@chunkify_task(
+    sleep_timeout=5,
+    initial_chunk=get_initial_chunk,
+)
 def send_push_notifications(chunk: Chunk):
-    """Create several tasks based on provided chunk and re-schedule their execution"""
-    chunked_qs = (  
-        users_queryset  
-        .filter(pk__range=chunk.range)  
-        .values_list('pk', flat=True)  
-        .order_by('pk')   
-    )     
-  
-    for user_id in chunked_qs:  
+    """Create several tasks based on provided chunk and re-schedule their execution."""
+    chunked_qs = (
+        users_queryset
+        .filter(pk__range=chunk.range)
+        .values_list('pk', flat=True)
+        .order_by('pk')
+    )
+
+    for user_id in chunked_qs:
         send_push_notifications_for_user.delay(user_id)
 ```
 
@@ -60,4 +65,3 @@ The decorator accepts 3 parameters:
 ## Chunk classes
 
 `Chunk` aka `IntChunk` – represents chunk data in list of integers, `DateChunk` and `DateTimeChunk` – represent date chunks, public API can be explorer via `BaseChunk` class.
-

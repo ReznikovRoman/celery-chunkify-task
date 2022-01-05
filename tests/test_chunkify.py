@@ -1,7 +1,7 @@
 import pytest
 
 import celery
-from chunkify import Chunk, ChunkMode, chunkify_task
+from celery_chunkificator.chunkify import Chunk, ChunkMode, chunkify_task
 
 import logging
 

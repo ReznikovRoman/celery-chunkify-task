@@ -56,7 +56,7 @@ class BaseChunk:
     def shift_getter(self) -> Callable:
         raise NotImplementedError()
 
-    def next(self, shift: int=None):
+    def next(self, shift: int = None):
         if shift is None:
             if self.mode == ChunkMode.SLICE:
                 shift = self.shift_getter(0)
@@ -143,13 +143,15 @@ class chunkify_task:
 
         * sleep_timeout – seconds between processing each chunk of tasks.
         * initial_chunk – either `Chunk` object or callable which should return one.
-            Allows to specify first value in a chunk, chunk size and maximum
-            number of tasks.
+        Allows specifying first value in a chunk, chunk size and maximum number of tasks.
     """
-    def __init__(self, *,
-                 sleep_timeout: seconds,
-                 initial_chunk: Union[BaseChunk, Callable],
-                 chunk_class: Type[BaseChunk]=Chunk):
+    def __init__(
+            self,
+            *,
+            sleep_timeout: seconds,
+            initial_chunk: Union[BaseChunk, Callable],
+            chunk_class: Type[BaseChunk] = Chunk,
+    ):
         self.sleep_timeout = sleep_timeout
         self.initial_chunk = initial_chunk
         self.logger = logger
@@ -180,19 +182,18 @@ class chunkify_task:
 
         next_chunk = chunk.next()
         if next_chunk.is_exhausted:
-            log.info('Chunk is exhausted, iteration stopped',
-                     next_chunk=next_chunk)
+            log.info('Chunk is exhausted, iteration stopped', next_chunk=next_chunk)
 
             return result
 
         kwargs['chunk'] = next_chunk
-        current_task.apply_async(
-            kwargs=kwargs, countdown=self.sleep_timeout
-        )
+        current_task.apply_async(kwargs=kwargs, countdown=self.sleep_timeout)
 
-        log.info('Next chunk is scheduled',
-                 next_chunk=next_chunk,
-                 sleep_timeout=self.sleep_timeout)
+        log.info(
+            'Next chunk is scheduled',
+            next_chunk=next_chunk,
+            sleep_timeout=self.sleep_timeout,
+        )
 
         return result
 
@@ -217,4 +218,3 @@ class chunkify_task:
         if callable(self.initial_chunk):
             return self.initial_chunk(*args, **kwargs)
         return self.initial_chunk
-

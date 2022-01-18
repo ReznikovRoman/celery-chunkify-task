@@ -1,4 +1,4 @@
-# Efficient celery tasks chunkification
+# Efficient celery tasks chunkification [Fork]
 
 This library allows to chunkify a huge bunch of celery tasks into several numbers of chunks which will be executed periodically until the initial queue is not empty.
 
